@@ -3,9 +3,11 @@ import urllib.request
 import urllib.parse
 import json
 import os
-from pick import pick
 import zipfile
 import glob
+from simple_term_menu import TerminalMenu
+
+os.system("clear")
 
 # Colors
 Red          = "\033[31m"
@@ -167,9 +169,10 @@ def merg_files(first_dir):
         for f in read_files:
             with open(f, "rb") as infile:
                 outfile.write(infile.read())
-    print_menu = "Do you want to use httprobe or httpx?"
+    print_title = "Do you want to use httprobe or httpx?"
     print_options = ["httprobe", "httpx", "exit"]
-    option, index = pick(print_options, print_menu)    
+    print_menu = TerminalMenu(print_options, title=print_title)
+    index = print_menu.show()   
     if index == 0:
         httprobe_command(f"{first_dir}.txt")
     elif index == 1:
@@ -195,16 +198,18 @@ main_title = """
             This tools is designed to deal with chaos api from projectdiscovery.io
                         https://chaos.projectdiscovery.io/
 """
+
 main_options = ["all programmes", "offer bounty", "not offer bounty", "platform", "new subdomain",
                 "new subdomain and offer bounty", "new subdomain and offer bounty and platform", "new subdomain and platform", 
                 "new subdomain and not offer bounty", "new subdomain and not offer bounty and platform", 
                 "offer bounty and platform", "not offer bounty and platform" ,"specific program"]
-option, index = pick(main_options, main_title)
+
+main_menu = TerminalMenu(main_options, title=main_title)
+index = main_menu.show()
 
 sub_title = "choose your platform"
-sub_menu = ["hackerone", "bugcrowd", "yeswehack", "self hosted"]
-
-
+sub_option = ["hackerone", "bugcrowd", "yeswehack", "self hosted"]
+sub_menu = TerminalMenu(sub_option, title=sub_title)
 
 if index == 0:
     download_all_programmes()
@@ -213,13 +218,13 @@ elif index == 1:
 elif index == 2:
     download_not_offer_bounty()
 elif index == 3:
-    sub_option, sub_index = pick(sub_menu, sub_title)
+    sub_index = sub_menu.show()
     if sub_index == 0:
-        download_by_platform(sub_option)
+        download_by_platform(sub_option[sub_index])
     elif sub_index == 1:
-        download_by_platform(sub_option)
+        download_by_platform(sub_option[sub_index])
     elif sub_index == 2:
-        download_by_platform(sub_option)
+        download_by_platform(sub_option[sub_index])
     else:
         download_by_platform("")
 elif index == 4:
@@ -227,55 +232,55 @@ elif index == 4:
 elif index == 5:
     new_subdomains_and_offer_bounty()
 elif index == 6:
-    sub_option, sub_index = pick(sub_menu, sub_title)
+    sub_index = sub_menu.show()
     if sub_index == 0:
-        new_subdomain_and_offer_bounty_and_platform(sub_option)
+        new_subdomain_and_offer_bounty_and_platform(sub_option[sub_index])
     elif sub_index == 1:
-        new_subdomain_and_offer_bounty_and_platform(sub_option)
+        new_subdomain_and_offer_bounty_and_platform(sub_option[sub_index])
     elif sub_index == 2:
-        new_subdomain_and_offer_bounty_and_platform(sub_option)
+        new_subdomain_and_offer_bounty_and_platform(sub_option[sub_index])
     else:
         new_subdomain_and_offer_bounty_and_platform("")
 elif index == 7:
-    sub_option, sub_index = pick(sub_menu, sub_title)
+    sub_index = sub_menu.show()
     if sub_index == 0:
-        new_subdomain_and_platform(sub_option)
+        new_subdomain_and_platform(sub_option[sub_index])
     elif sub_index == 1:
-        new_subdomain_and_platform(sub_option)
+        new_subdomain_and_platform(sub_option[sub_index])
     elif sub_index == 2:
-        new_subdomain_and_platform(sub_option)
+        new_subdomain_and_platform(sub_option[sub_index])
     else:
         new_subdomain_and_platform("")
 elif index == 8:
     new_subdomain_and_not_offer_bounty()
 elif index == 9:
-    sub_option, sub_index = pick(sub_menu, sub_title)
+    sub_index = sub_menu.show()
     if sub_index == 0:
-        new_subdomain_and_not_offer_bounty_and_platform(sub_option)
+        new_subdomain_and_not_offer_bounty_and_platform(sub_option[sub_index])
     elif sub_index == 1:
-        new_subdomain_and_not_offer_bounty_and_platform(sub_option)
+        new_subdomain_and_not_offer_bounty_and_platform(sub_option[sub_index])
     elif sub_index == 2:
-        new_subdomain_and_not_offer_bounty_and_platform(sub_option)
+        new_subdomain_and_not_offer_bounty_and_platform(sub_option[sub_index])
     else:
         new_subdomain_and_not_offer_bounty_and_platform("")
 elif index == 10:
-    sub_option, sub_index = pick(sub_menu, sub_title)
+    sub_index = sub_menu.show()
     if sub_index == 0:
-        offer_bounty_and_platform(sub_option)
+        offer_bounty_and_platform(sub_option[sub_index])
     elif sub_index == 1:
-        offer_bounty_and_platform(sub_option)
+        offer_bounty_and_platform(sub_option[sub_index])
     elif sub_index == 2:
-        offer_bounty_and_platform(sub_option)
+        offer_bounty_and_platform(sub_option[sub_index])
     else:
         offer_bounty_and_platform("")
 elif index == 11:
-    sub_option, sub_index = pick(sub_menu, sub_title)
+    sub_index = sub_menu.show()
     if sub_index == 0:
-        not_offer_bounty_and_platform(sub_option)
+        not_offer_bounty_and_platform(sub_option[sub_index])
     elif sub_index == 1:
-        not_offer_bounty_and_platform(sub_option)
+        not_offer_bounty_and_platform(sub_option[sub_index])
     elif sub_index == 2:
-        not_offer_bounty_and_platform(sub_option)
+        not_offer_bounty_and_platform(sub_option[sub_index])
     else:
         not_offer_bounty_and_platform("")
 else:
@@ -283,5 +288,7 @@ else:
     for name in data_json:
         programe_names.append(name["name"])
     subdomain_title = "Choose your program"
-    programe_name = pick(programe_names, subdomain_title)
-    download_specific_program(programe_name[0])
+    programe_menu = TerminalMenu(programe_names, title=subdomain_title)
+    index = programe_menu.show()
+    programe_name = programe_names[index]
+    download_specific_program(programe_name)
