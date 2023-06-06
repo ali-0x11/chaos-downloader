@@ -1,1 +1,1 @@
-pick
+simple-term-menu
