@@ -16,3 +16,7 @@ pip3 install -r requirements.txt
 chmod +x ./chaos-downloader.py
 ./chaos-downloader.py
 ```
+
+## note:
+
+This tool works on Linux only
