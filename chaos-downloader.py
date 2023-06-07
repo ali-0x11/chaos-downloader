@@ -185,7 +185,10 @@ def merg_files(first_dir):
     print("\n")
     print_title = "Do you want to use httprobe or httpx?"
     print_options = ["httprobe", "httpx", "Back to Main Menu", "exit"]
-    print_menu = TerminalMenu(print_options, title=print_title)
+    print_menu = TerminalMenu(print_options, title=print_title,
+                              menu_cursor=main_menu_cursor,
+                              menu_cursor_style=main_menu_cursor_style,
+                              menu_highlight_style=main_menu_style)
     index = print_menu.show()   
     if index == 0:
         httprobe_command(f"{first_dir}.txt")
@@ -199,7 +202,6 @@ def merg_files(first_dir):
 def info():
     last_update = data_json[0]['last_updated'][:10]
     total_subdomains = 0
-    total_programs = 0
     programs_changed = 0
     new_programs = 0
     hackerone_programs = 0
