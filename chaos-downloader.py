@@ -314,13 +314,13 @@ while not main_menu_exit:
         while not sub_menu_back:
             sub_sel = sub_menu.show()
             if sub_sel == 0:
-                download_by_platform(sub_menu_items[sub_sel])
+                download_by_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 1:
-                download_by_platform(sub_menu_items[sub_sel])
+                download_by_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 2:
-                download_by_platform(sub_menu_items[sub_sel])
+                download_by_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 3:
-                download_by_platform(sub_menu_items[sub_sel])
+                download_by_platform("")
             elif sub_sel == 4 or sub_sel == None:
                 sub_menu_back = True
         sub_menu_back = False
@@ -332,11 +332,11 @@ while not main_menu_exit:
         while not sub_menu_back:
             sub_sel = sub_menu.show()
             if sub_sel == 0 :
-                new_subdomain_and_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 1:
-                new_subdomain_and_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 2:
-                new_subdomain_and_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 3:
                 new_subdomain_and_offer_bounty_and_platform("")
             elif sub_sel == 4 or sub_sel == None:
@@ -346,11 +346,11 @@ while not main_menu_exit:
         while not sub_menu_back:
             sub_sel = sub_menu.show()
             if sub_sel == 0 :
-                new_subdomain_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 1:
-                new_subdomain_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 2:
-                new_subdomain_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 3:
                 new_subdomain_and_platform("")
             elif sub_sel == 4 or sub_sel == None:
@@ -362,11 +362,11 @@ while not main_menu_exit:
         while not sub_menu_back:
             sub_sel = sub_menu.show()
             if sub_sel == 0 :
-                new_subdomain_and_not_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_not_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 1:
-                new_subdomain_and_not_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_not_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 2:
-                new_subdomain_and_not_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                new_subdomain_and_not_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 3:
                 new_subdomain_and_not_offer_bounty_and_platform("")
             elif sub_sel == 4 or sub_sel == None:
@@ -376,11 +376,11 @@ while not main_menu_exit:
         while not sub_menu_back:
             sub_sel = sub_menu.show()
             if sub_sel == 0 :
-                offer_bounty_and_platform(sub_menu_items[sub_sel])
+                offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 1:
-                offer_bounty_and_platform(sub_menu_items[sub_sel])
+                offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 2:
-                offer_bounty_and_platform(sub_menu_items[sub_sel])
+                offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 3:
                 offer_bounty_and_platform("")
             elif sub_sel == 4 or sub_sel == None:
@@ -390,11 +390,11 @@ while not main_menu_exit:
         while not sub_menu_back:
             sub_sel = sub_menu.show()
             if sub_sel == 0 :
-                not_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                not_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 1:
-                not_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                not_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 2:
-                not_offer_bounty_and_platform(sub_menu_items[sub_sel])
+                not_offer_bounty_and_platform(sub_menu_items[sub_sel].lower())
             elif sub_sel == 3:
                 not_offer_bounty_and_platform("")
             elif sub_sel == 4 or sub_sel == None:
