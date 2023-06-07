@@ -21,9 +21,9 @@ chmod +x ./chaos-downloader.py
 
 # Feature
 
-- dealing with chaos api with more filter
-- colleting all domain in one file
-- unzip folder after download
+- dealing with chaos api with more filters
+- colleting all domains in one file
+- unzip folders after downloading
 - you can use httprobe or httpx after downloading
 
 ## note:
