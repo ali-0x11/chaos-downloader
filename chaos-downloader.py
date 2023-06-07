@@ -232,7 +232,7 @@ def info():
             programs_with_swag +=1
 
     info_options = [f"Programs last updated in {last_update}", f"{total_subdomains} Subdomain.",
-                    f"{total_programs} Programs.", f"{programs_changed} Programs changes.",
+                    f"{ hackerone_programs + bugcrowd_programs + yeswehacker_programs + self_hosted_programs } Programs.", f"{programs_changed} Programs changes.",
                     f"{new_programs} New programs.", f"{hackerone_programs} Hackerone programs.",
                     f"{bugcrowd_programs} Bugcrowd programs.", f"{yeswehacker_programs} Yeswehack programs.",
                     f"{self_hosted_programs} Self hosted programs.",
