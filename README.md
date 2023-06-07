@@ -6,7 +6,7 @@ This tools is designed to deal with chaos api from projectdiscovery.io
 
 ```
 git clone https://github.com/ali-0x11/chaos-downloader/
-cd chaos-downaldoer
+cd chaos-downloader
 pip3 install -r requirements.txt
 ```
 
