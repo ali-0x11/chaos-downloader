@@ -19,6 +19,13 @@ chmod +x ./chaos-downloader.py
 
 ![alt text](https://github.com/ali-0x11/chaos-downloader/blob/main/info.jpg?raw=true)
 
+# Feature
+
+- dealing with chaos api with more filter
+- colleting all domain in one file
+- unzip folder after download
+- you can use httprobe or httpx after downloading
+
 ## note:
 
 This tool works on Linux only
