@@ -17,6 +17,8 @@ chmod +x ./chaos-downloader.py
 ./chaos-downloader.py
 ```
 
+![alt text](https://github.com/ali-0x11/chaos-downloader/blob/main/info.jpg?raw=true)
+
 ## note:
 
 This tool works on Linux only
