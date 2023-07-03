@@ -27,7 +27,7 @@ chmod +x ./chaos-downloader.py
 - colleting all domains in one file.
 - you can use httprobe or httpx after downloading.
 
-## note:
+## notes:
 
 - This tool works on Linux only.
 - The tool will not give you the new subdomains if you run it for the first time because the tool depend on the database to compare the subdomains.
