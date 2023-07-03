@@ -417,25 +417,27 @@ def httpx_command(file_name):
         print(line)
 
 def export_programme():
-    programe_names = [programme_name["name"] for programme_name in data_json]
-    programe_title_e = main_menu_title + "  Export Menu.\n  Press Q or Esc to back to main menu. \n"
-    programe_menu = TerminalMenu(programe_names, title=programe_title_e, show_search_hint=True, menu_cursor=main_menu_cursor, menu_cursor_style=main_menu_cursor_style, menu_highlight_style=main_menu_style)
-    index = programe_menu.show()
-    programe_name = programe_names[index]
-    sql = f"SELECT ID FROM names WHERE name='{programe_name}'"
-    cursor.execute(sql)
-    programm_id = cursor.fetchone()[0]
-    sql2 = f"SELECT subdomain FROM subdomains WHERE program_ID={programm_id}"
-    cursor.execute(sql2)
-    subdomains = [subdomain[0] for subdomain in cursor.fetchall()]
-    file = open(f"{programe_name}_exported.txt", "w+", encoding="utf-8")
-    total = len(subdomains)
-    with Bar('Exporting subdomains from database...',max = total) as bar:
-        for subdomain in subdomains:
-            file.write(subdomain)
-            bar.next()
-    file.close()
-    
+    try:
+        programe_names = [programme_name["name"] for programme_name in data_json]
+        programe_title_e = main_menu_title + "  Export Menu.\n  Press Q or Esc to back to main menu. \n"
+        programe_menu = TerminalMenu(programe_names, title=programe_title_e, show_search_hint=True, menu_cursor=main_menu_cursor, menu_cursor_style=main_menu_cursor_style, menu_highlight_style=main_menu_style)
+        index = programe_menu.show()
+        programe_name = programe_names[index]
+        sql = f"SELECT ID FROM names WHERE name='{programe_name}'"
+        cursor.execute(sql)
+        programm_id = cursor.fetchone()[0]
+        sql2 = f"SELECT subdomain FROM subdomains WHERE program_ID={programm_id}"
+        cursor.execute(sql2)
+        subdomains = [subdomain[0] for subdomain in cursor.fetchall()]
+        file = open(f"{programe_name}_exported.txt", "w+", encoding="utf-8")
+        total = len(subdomains)
+        with Bar('Exporting subdomains from database...',max = total) as bar:
+            for subdomain in subdomains:
+                file.write(subdomain)
+                bar.next()
+        file.close()
+    except Exception:
+        pass
 
 main_menu_title = """
           _____ _                       _____                      _                 _           
