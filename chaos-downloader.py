@@ -107,7 +107,7 @@ def download(link, save_dir, file_name, programe_name, platform, offer_bounty):
 
 def download_all_programmes():
     save_dir = "all_programmes"
-    banner =  Yellow + "warning:" + Default + " this option will take a long time to finish " + Red + "[!]" + Default
+    banner = Yellow + "warning:" + Default + " this option will take a long time to finish " + Red + "[!]" + Default
     print(banner)
     input("Press enter to continue or CTRL+c to exit")
     remove_all = open("all_programmes.txt", "w")
@@ -163,7 +163,7 @@ def download_by_platform(platform_name):
             merg_sub_files_insert(save_dir, programe_name)
     ask(save_dir)
 
-def download_specific_program(program_name):
+def download_specific_program(program_name, number):
     save_dir = f"{program_name}"
     program_info = []
     headers = ["Info", f"{program_name}"]
@@ -181,8 +181,11 @@ def download_specific_program(program_name):
             download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
             merg_sub_files_insert(save_dir, programe_name)
     print("\n")
-    print(tabulate(program_info[0], headers, tablefmt="double_grid"))
-    ask(save_dir)
+    if number != 1:
+        pass
+    else:
+        print(tabulate(program_info[0], headers, tablefmt="double_grid"))
+        ask(save_dir)
 
 def download_new_subdomain():
     save_dir = "new_subdomains"
@@ -420,24 +423,25 @@ def export_programme():
     try:
         programe_names = [programme_name["name"] for programme_name in data_json]
         programe_title_e = main_menu_title + "  Export Menu.\n  Press Q or Esc to back to main menu. \n"
-        programe_menu = TerminalMenu(programe_names, title=programe_title_e, show_search_hint=True, menu_cursor=main_menu_cursor, menu_cursor_style=main_menu_cursor_style, menu_highlight_style=main_menu_style)
+        programe_menu = TerminalMenu(programe_names, title=programe_title_e, show_search_hint=True, menu_cursor=main_menu_cursor, menu_cursor_style=main_menu_cursor_style, menu_highlight_style=main_menu_style, multi_select=True, show_multi_select_hint=True)
         index = programe_menu.show()
-        programe_name = programe_names[index]
-        sql = f"SELECT ID FROM names WHERE name='{programe_name}'"
-        cursor.execute(sql)
-        programm_id = cursor.fetchone()[0]
-        sql2 = f"SELECT subdomain FROM subdomains WHERE program_ID={programm_id}"
-        cursor.execute(sql2)
-        subdomains = [subdomain[0] for subdomain in cursor.fetchall()]
-        file = open(f"{programe_name}_exported.txt", "w+", encoding="utf-8")
-        total = len(subdomains)
-        with Bar('Exporting subdomains from database...',max = total) as bar:
-            for subdomain in subdomains:
-                file.write(subdomain)
-                bar.next()
-        file.close()
-    except Exception:
-        pass
+        for programe_name in programe_menu.chosen_menu_entries:
+            sql = f"SELECT ID FROM names WHERE name='{programe_name}'"
+            cursor.execute(sql)
+            programm_id = cursor.fetchone()[0]
+            sql2 = f"SELECT subdomain FROM subdomains WHERE program_ID={programm_id}"
+            cursor.execute(sql2)
+            subdomains = [subdomain[0] for subdomain in cursor.fetchall()]
+            file = open(f"{programe_name}_exported.txt", "w+", encoding="utf-8")
+            total = len(subdomains)
+            with Bar('Exporting subdomains from database...',max = total) as bar:
+                for subdomain in subdomains:
+                    file.write(subdomain)
+                    bar.next()
+            file.close()
+    except Exception as e:
+        print(e)
+    
 
 main_menu_title = """
           _____ _                       _____                      _                 _           
@@ -584,10 +588,12 @@ while not main_menu_exit:
     elif main_sel == 12:
         programe_names = [programme_name["name"] for programme_name in data_json]
         programe_title = main_menu_title + "  programs Menu.\n  Press Q or Esc to back to main menu. \n"
-        programe_menu = TerminalMenu(programe_names, title=programe_title, show_search_hint=True, menu_cursor=main_menu_cursor, menu_cursor_style=main_menu_cursor_style, menu_highlight_style=main_menu_style)
+        programe_menu = TerminalMenu(programe_names, title=programe_title, show_search_hint=True, menu_cursor=main_menu_cursor, menu_cursor_style=main_menu_cursor_style, menu_highlight_style=main_menu_style, multi_select=True, show_multi_select_hint=True)
         index = programe_menu.show()
-        programe_name = programe_names[index]
-        download_specific_program(programe_name)
+        programe_names = programe_menu.chosen_menu_entries
+        number = len(programe_names)
+        for programe_name in programe_names:
+            download_specific_program(programe_name, number)
     elif main_sel == 13:
         info()
     elif main_sel == 14:
