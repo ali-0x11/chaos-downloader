@@ -7,14 +7,34 @@ import zipfile
 import glob
 from simple_term_menu import TerminalMenu
 from tabulate import tabulate
+import subprocess
+import sqlite3
+from progress.bar import Bar
 
 
 os.system("clear")
+
+
+# Databse connection
+sqliteConnection = sqlite3.connect('chaos.db')
+cursor = sqliteConnection.cursor()
+
+# Create Tables
+sql = "CREATE TABLE IF NOT EXISTS names (ID INTEGER PRIMARY KEY, name TEXT UNIQUE, platform TEXT, offer_bounty BOOLEAN, late_update DATE);"
+cursor.execute(sql)
+sqliteConnection.commit()
+
+sql5 = "CREATE TABLE IF NOT EXISTS subdomains (ID INTEGER PRIMARY KEY, subdomain TEXT UNIQUE, program_ID INTEGER, FOREIGN KEY(program_ID) REFERENCES names(ID));"
+cursor.execute(sql5)
+sqliteConnection.commit()
+
 
 # Colors
 Red          = "\033[31m"
 Green        = "\033[32m"
 White        = "\033[97m"
+Yellow       = "\033[33m"
+Default      = '\033[0m'
 
 
 # Load the main json page
@@ -23,63 +43,125 @@ request_site = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}
 webpage = urllib.request.urlopen(request_site).read()
 data_json = json.loads(webpage)
 
-
 # To solve error 403 while downloading
 opener = urllib.request.URLopener()
 opener.addheader('User-Agent', 'Mozilla/5.0')
 
+
+def insert_table_name(programe_name, platform, offer_bounty):
+    try:
+        sql = f"INSERT INTO names(name, platform, offer_bounty, late_update) VALUES('{programe_name}', '{platform}', '{offer_bounty}',  DATE('NOW'));"
+        cursor.execute(sql)
+        sqliteConnection.commit()
+    except Exception as e:
+        pass
+
+
+def insert_domains(programe_name, subdomain):
+    try:
+        sql = f"SELECT ID FROM names WHERE name='{programe_name}'"
+        cursor.execute(sql)
+        programm_id = cursor.fetchone()[0]
+        sql1 = f"SELECT subdomain FROM subdomains WHERE program_ID='{programm_id}'"
+        cursor.executemany('INSERT INTO subdomains(subdomain, program_ID) values (?, ?)', [(subdomain, programm_id)])
+        sqliteConnection.commit()
+        return subdomain
+    except sqlite3.IntegrityError as e:
+        pass
+
+def insert_values_httprobe(programe_name, live_subdomains_httprobe):
+    try:
+        sql = f"SELECT ID FROM names WHERE name='{programe_name}'"
+        cursor.execute(sql)
+        programm_id = cursor.fetchone()[0]
+        sql1 = f'INSERT INTO httprobe (live_subdomains, program_ID) VALUES (?, ?);'
+        cursor.executemany(sql1, [(live_subdomains_httprobe, programm_id)])
+        sqliteConnection.commit()
+    except Exception as e:
+        print(e)
+
+
 def get_file_name(download_link):
     return os.path.basename(download_link)
 
-def download(link, save_dir, file_name):
-    if not os.path.exists(f'{save_dir}/{file_name.removesuffix(".zip")}'):
-        os.makedirs(f'{save_dir}/{file_name.removesuffix(".zip")}')
-    
+
+# Main function for download
+def download(link, save_dir, file_name, programe_name, platform, offer_bounty):
+    if not os.path.exists(f'{save_dir}/{programe_name}'):
+        os.makedirs(f'{save_dir}/{programe_name}')
+
+    # insert Programmes names
+    insert_table_name(programe_name, platform, offer_bounty)
+
     # To solve UnicodeError
     link = urllib.parse.urlsplit(link)
     link = list(link)
     link[2] = urllib.parse.quote(link[2])
     link = urllib.parse.urlunsplit(link)
     try:
-        opener.retrieve(link, os.path.join(f'{save_dir}/{file_name.removesuffix(".zip")}', file_name))
-        unzip_files(file_name, f'{save_dir}/{file_name.removesuffix(".zip")}')
+        opener.retrieve(link, os.path.join(f'{save_dir}/{programe_name}', file_name))
+        unzip_files(file_name, f'{save_dir}/{programe_name}')
         print(f"{Red}[+]{White} {file_name} Done {Green}[\u2713]{White}")
     except KeyboardInterrupt:
         exit(0)
 
 def download_all_programmes():
-    save_dir = "./all_programmes"
+    save_dir = "all_programmes"
+    banner =  Yellow + "warning:" + Default + " this option will take a long time to finish " + Red + "[!]" + Default
+    print(banner)
+    input("Press enter to continue or CTRL+c to exit")
+    remove_all = open("all_programmes.txt", "w")
+    remove_all.close()
     for link in data_json:
         download_link = link["URL"]
+        programe_name = link["name"]
+        platform = link["platform"]
+        offer_bounty = link["bounty"]
         file_name = get_file_name(download_link)
-        download(download_link, save_dir, file_name)
-    merg_files(save_dir)
+        download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+        merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def download_offer_bounty():
-    save_dir = "./offer_bounty"
+    save_dir = "offer_bounty"
     for data in data_json:
         if data["bounty"] == True:
             file_name = get_file_name(data["URL"])
-            download(data["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = data["name"]
+            download_link = data["URL"]
+            platform = data["platform"]
+            offer_bounty = data["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def download_not_offer_bounty():
-    save_dir = "./not_offer_bounty"
+    save_dir = "not_offer_bounty"
     for data in data_json:
         if data["bounty"] == False:
             file_name = get_file_name(data["URL"])
-            download(data["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = data["name"]
+            download_link = data["URL"]
+            platform = data["platform"]
+            offer_bounty = data["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def download_by_platform(platform_name):
     save_dir = f"{platform_name}"
-    for program in data_json:
-        if program['platform'] == platform_name:
-            if program['platform'] == "":
+    for data in data_json:
+        if data['platform'] == platform_name:
+            if data['platform'] == "":
                 save_dir = "self hosted"
-            file_name = get_file_name(program["URL"])
-            download(program["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            file_name = get_file_name(data["URL"])
+            programe_name = data["name"]
+            download_link = data["URL"]
+            platform = data["platform"]
+            offer_bounty = data["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def download_specific_program(program_name):
     save_dir = f"{program_name}"
@@ -92,112 +174,179 @@ def download_specific_program(program_name):
                                 ["is new", program['is_new']], ["platform", program['platform']],
                                 ["offer reward", program['bounty']], ['last_updated', program['last_updated'][:10]]])
             file_name = get_file_name(program["URL"])
-            download(program["URL"], save_dir, file_name)
+            programe_name = program["name"]
+            download_link = program["URL"]
+            platform = program["platform"]
+            offer_bounty = program["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
     print("\n")
     print(tabulate(program_info[0], headers, tablefmt="double_grid"))
-    merg_files(save_dir)
+    ask(save_dir)
 
 def download_new_subdomain():
-    save_dir = "./new_subdomains"
+    save_dir = "new_subdomains"
     for program in data_json:
         if program["change"] != 0:
             file_name = get_file_name(program["URL"])
-            download(program["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = program["name"]
+            download_link = program["URL"]
+            platform = program["platform"]
+            offer_bounty = program["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def new_subdomains_and_offer_bounty():
-    save_dir = "./new_subdomains_and_offer_bounty"
+    save_dir = "new_subdomains_and_offer_bounty"
     for data in data_json:
         if (data["bounty"] == True) and (data["change"] != 0):
             file_name = get_file_name(data["URL"])
-            download(data["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = data["name"]
+            download_link = data["URL"]
+            platform = data["platform"]
+            offer_bounty = data["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def new_subdomain_and_offer_bounty_and_platform(platform_name):
-    save_dir = f"./new_subdomain_and_offer_bounty_and_{platform_name}"
+    save_dir = f"new_subdomain_and_offer_bounty_and_{platform_name}"
     for data in data_json:
         if (data["bounty"] == True) and (data["change"] != 0) and (data['platform'] == platform_name):
             if data['platform'] == "":
                 save_dir = "new_subdomain_and_offer_bounty_and_self_hosted"
             file_name = get_file_name(data["URL"])
-            download(data["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = data["name"]
+            download_link = data["URL"]
+            platform = data["platform"]
+            offer_bounty = data["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def new_subdomain_and_platform(platform_name):
-    save_dir = f"./new_subdomain_and_offer_bounty_and_{platform_name}"
+    save_dir = f"new_subdomain_and_offer_bounty_and_{platform_name}"
     for data in data_json:
         if (data["change"] != 0) and (data['platform'] == platform_name):
             if data['platform'] == "":
-                save_dir = "./new_subdomain_and_offer_bounty_and_self_hosted"
+                save_dir = "new_subdomain_and_offer_bounty_and_self_hosted"
             file_name = get_file_name(data["URL"])
-            download(data["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = data["name"]
+            download_link = data["URL"]
+            platform = data["platform"]
+            offer_bounty = data["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def new_subdomain_and_not_offer_bounty():
-    save_dir = "./new_subdomain_and_not_offer_bounty"
+    save_dir = "new_subdomain_and_not_offer_bounty"
     for program in data_json:
         if (program["change"] != 0) and (program["bounty"] == False):
             file_name = get_file_name(program["URL"])
-            download(program["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = program["name"]
+            download_link = program["URL"]
+            platform = program["platform"]
+            offer_bounty = program["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def new_subdomain_and_not_offer_bounty_and_platform(platform_name):
     save_dir = f"./new_subdomain_and_not_offer_bounty_and_{platform_name}"
     for program in data_json:
         if (program["change"] != 0) and (program["bounty"] == False) and (program['platform'] == platform_name):
             if program['platform'] == "":
-                save_dir = "./new_subdomain_and_not_offer_bounty_and_self_hosted"
+                save_dir = "new_subdomain_and_not_offer_bounty_and_self_hosted"
             file_name = get_file_name(program["URL"])
-            download(program["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = program["name"]
+            download_link = program["URL"]
+            platform = program["platform"]
+            offer_bounty = program["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def offer_bounty_and_platform(platform_name):
     save_dir = f"./offer_bounty_and_{platform_name}"
     for program in data_json:
         if (program["bounty"] == True) and (program['platform'] == platform_name):
             if program['platform'] == "":
-                save_dir = "./offer_bounty_and_self_hosted"
+                save_dir = "offer_bounty_and_self_hosted"
             file_name = get_file_name(program["URL"])
-            download(program["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = program["name"]
+            download_link = program["URL"]
+            platform = program["platform"]
+            offer_bounty = program["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def not_offer_bounty_and_platform(platform_name):
     save_dir = f"./not_offer_bounty_and{platform_name}"
     for program in data_json:
         if (program["bounty"] == False) and (program['platform'] == platform_name):
             if program['platform'] == "":
-                save_dir = "./not_offer_bounty_and_self_hosted"
+                save_dir = "not_offer_bounty_and_self_hosted"
             file_name = get_file_name(program["URL"])
-            download(program["URL"], save_dir, file_name)
-    merg_files(save_dir)
+            programe_name = program["name"]
+            download_link = program["URL"]
+            platform = program["platform"]
+            offer_bounty = program["bounty"]
+            download(download_link, save_dir, file_name, programe_name, platform, offer_bounty)
+            merg_sub_files_insert(save_dir, programe_name)
+    ask(save_dir)
 
 def unzip_files(file_name, save_dir):
     with zipfile.ZipFile(f'{save_dir}/{file_name}', 'r') as zip:
         zip.extractall(save_dir)
     os.remove(f"{save_dir}/{file_name}")
 
-def merg_files(first_dir):
-    read_files = glob.glob(f"{first_dir}/*/*.txt")
-    with open(f"{first_dir}.txt", "wb") as outfile:
-        for f in read_files:
-            with open(f, "rb") as infile:
-                outfile.write(infile.read())
+
+def ask(first_dir):
     print("\n")
     print_title = "Do you want to use httprobe or httpx?"
     print_options = ["httprobe", "httpx", "Back to Main Menu", "exit"]
     print_menu = TerminalMenu(print_options, title=print_title,
-                              menu_cursor=main_menu_cursor,
-                              menu_cursor_style=main_menu_cursor_style,
-                              menu_highlight_style=main_menu_style)
+                            menu_cursor=main_menu_cursor,
+                            menu_cursor_style=main_menu_cursor_style,
+                            menu_highlight_style=main_menu_style)
     index = print_menu.show()   
     if index == 0:
-        httprobe_command(f"{first_dir}.txt")
+        httprobe_command(f"{first_dir}")
     elif index == 1:
-        httpx_command(f"{first_dir}.txt")
+        httpx_command(f"{first_dir}")
     elif index == 2:
         pass
     else:
         exit(0)
+
+def merg_sub_files_insert(first_dir, program_name):        
+    read_files = glob.glob(f"{first_dir}/{program_name}/*.txt")
+    new_subdomains = [] 
+    with open(f"{first_dir}.txt", "a+") as outfile:
+        for f in read_files:
+            with open(f, "r") as infile:
+                outfile.write(infile.read())
+                infile.seek(0)
+                lines = infile.readlines()
+                total = len(lines)
+                with Bar('Migrating Subdomains to the database...',max = total) as bar:
+                    for line in lines:
+                        s = insert_domains(program_name, line)
+                        new_subdomains.append(s)
+                        bar.next()
+        print()
+    try:
+        with open(f"new_{str(first_dir)}.txt", "a+") as new_file:
+            for subdomain in new_subdomains:
+                if subdomain == None:
+                    pass
+                else:
+                    new_file.write(subdomain)
+    except:
+        pass
 
 def info():
     last_update = data_json[0]['last_updated'][:10]
@@ -251,14 +400,42 @@ def info():
         print("Quit Selected")
         exit(0)
 
-
-        
-
 def httprobe_command(file_name):
-    os.system(f"cat {file_name} | httprobe -c 1000 | tee -a live_domains_{file_name}_httprobe.txt")
+    cmd = f'cat "new_{file_name}.txt" | httprobe -c 1000 | tee -a "live_domains_{file_name}_httprobe.txt"'
+    file = open(f"live_domains_{file_name}_httprobe.txt", "a+", encoding="utf-8")
+    file.truncate(0)
+    p1 = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, bufsize=1)
+    for line in p1.stdout:
+        print(line)
 
 def httpx_command(file_name):
-    os.system(f"cat {file_name} | httpx -t 200 -rl 600 | tee -a live_domains_{file_name}_httpx.txt ")
+    cmd = f'cat "new_{file_name}.txt" | httpx -t 200 -silent -nc -rl 600 | tee -a "live_domains_{file_name}_httpx.txt"'
+    file = open(f"live_domains_{file_name}_httpx.txt", "w+", encoding="utf-8")
+    file.truncate(0)
+    p1 = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, bufsize=1)
+    for line in p1.stdout:
+        print(line)
+
+def export_programme():
+    programe_names = [programme_name["name"] for programme_name in data_json]
+    programe_title_e = main_menu_title + "  Export Menu.\n  Press Q or Esc to back to main menu. \n"
+    programe_menu = TerminalMenu(programe_names, title=programe_title_e, show_search_hint=True, menu_cursor=main_menu_cursor, menu_cursor_style=main_menu_cursor_style, menu_highlight_style=main_menu_style)
+    index = programe_menu.show()
+    programe_name = programe_names[index]
+    sql = f"SELECT ID FROM names WHERE name='{programe_name}'"
+    cursor.execute(sql)
+    programm_id = cursor.fetchone()[0]
+    sql2 = f"SELECT subdomain FROM subdomains WHERE program_ID={programm_id}"
+    cursor.execute(sql2)
+    subdomains = [subdomain[0] for subdomain in cursor.fetchall()]
+    file = open(f"{programe_name}_exported.txt", "w+", encoding="utf-8")
+    total = len(subdomains)
+    with Bar('Exporting subdomains from database...',max = total) as bar:
+        for subdomain in subdomains:
+            file.write(subdomain)
+            bar.next()
+    file.close()
+    
 
 main_menu_title = """
           _____ _                       _____                      _                 _           
@@ -271,10 +448,10 @@ main_menu_title = """
         This tools is designed to deal with chaos api from projectdiscovery.io
                     https://chaos.projectdiscovery.io/
 """
-main_menu_items = ["all programmes", "offer bounty", "not offer bounty", "platform", "new subdomain",
+main_menu_items = ["all programes", "offer bounty", "not offer bounty", "platform", "new subdomain",
             "new subdomain and offer bounty", "new subdomain and offer bounty and platform", "new subdomain and platform", 
             "new subdomain and not offer bounty", "new subdomain and not offer bounty and platform", 
-            "offer bounty and platform", "not offer bounty and platform" ,"specific programs", "Info about programs","Quit"]
+            "offer bounty and platform", "not offer bounty and platform" ,"specific programs", "Info about programs","Export programme from database","Quit"]
 main_menu_cursor = "> "
 main_menu_cursor_style = ("fg_red", "bold")
 main_menu_style = ("bg_red", "fg_yellow")
@@ -403,9 +580,7 @@ while not main_menu_exit:
                 sub_menu_back = True
         sub_menu_back = False
     elif main_sel == 12:
-        programe_names = []
-        for name in data_json:
-            programe_names.append(name["name"])
+        programe_names = [programme_name["name"] for programme_name in data_json]
         programe_title = main_menu_title + "  programs Menu.\n  Press Q or Esc to back to main menu. \n"
         programe_menu = TerminalMenu(programe_names, title=programe_title, show_search_hint=True, menu_cursor=main_menu_cursor, menu_cursor_style=main_menu_cursor_style, menu_highlight_style=main_menu_style)
         index = programe_menu.show()
@@ -413,6 +588,8 @@ while not main_menu_exit:
         download_specific_program(programe_name)
     elif main_sel == 13:
         info()
-    elif main_sel == 14 or main_sel == None:
+    elif main_sel == 14:
+        export_programme()
+    elif main_sel == 15 or main_sel == None:
         main_menu_exit = True
         print("Quit Selected")

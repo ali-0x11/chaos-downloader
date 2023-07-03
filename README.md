@@ -21,11 +21,14 @@ chmod +x ./chaos-downloader.py
 
 # Feature
 
-- dealing with chaos api with more filters
-- unzip folders after downloading
-- colleting all domains in one file
-- you can use httprobe or httpx after downloading
+- extract the new subdomains
+- dealing with chaos api with more filters.
+- unzip folders after downloading.
+- colleting all domains in one file.
+- you can use httprobe or httpx after downloading.
 
 ## note:
 
-This tool works on Linux only
+- This tool works on Linux only.
+- The tool will not give you the new subdomains if you run it for the first time because the tool depend on the database to compare the subdomains.
+- The tool will run httprobe or httpx on new subdomains
