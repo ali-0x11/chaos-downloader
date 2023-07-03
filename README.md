@@ -2,7 +2,7 @@
 
 This tools is designed to deal with chaos api from projectdiscovery.io
 
-# Installation
+## Installation
 
 ```
 git clone https://github.com/ali-0x11/chaos-downloader/
@@ -10,7 +10,7 @@ cd chaos-downloader
 pip3 install -r requirements.txt
 ```
 
-# Usage
+## Usage
 
 ```
 chmod +x ./chaos-downloader.py
@@ -19,7 +19,7 @@ chmod +x ./chaos-downloader.py
 
 ![alt text](https://github.com/ali-0x11/chaos-downloader/blob/main/info.jpg?raw=true)
 
-# Feature
+## Features:
 
 - extract the new subdomains
 - dealing with chaos api with more filters.
