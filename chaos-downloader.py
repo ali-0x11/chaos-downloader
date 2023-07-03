@@ -37,6 +37,8 @@ Yellow       = "\033[33m"
 Default      = '\033[0m'
 
 
+
+
 # Load the main json page
 url = "https://chaos-data.projectdiscovery.io/index.json"
 request_site = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
