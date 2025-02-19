@@ -12,6 +12,7 @@ import concurrent.futures
 from pathlib import Path
 from simple_term_menu import TerminalMenu
 from tabulate import tabulate
+from tqdm import tqdm  # <-- Added progress bar support
 
 # Clear screen
 os.system("clear")
@@ -172,7 +173,8 @@ def download_filtered_programs(filter_func, save_dir):
     print(f"Starting download of {len(programs)} programs...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(process_program, prog, save_dir): prog for prog in programs}
-        for future in concurrent.futures.as_completed(futures):
+        # Wrap the as_completed iterator with tqdm for a progress bar.
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc="Processing programs"):
             prog = futures[future]
             try:
                 future.result()
