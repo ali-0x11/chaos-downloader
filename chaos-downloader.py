@@ -12,7 +12,7 @@ import concurrent.futures
 from pathlib import Path
 from simple_term_menu import TerminalMenu
 from tabulate import tabulate
-from tqdm import tqdm  # <-- Added progress bar support
+from tqdm import tqdm  # Added progress bar support
 
 # Clear screen
 os.system("clear")
@@ -72,7 +72,7 @@ def insert_table_name(program_name, platform, offer_bounty):
             )
             sqliteConnection.commit()
         except Exception as e:
-            print("DB error:", e)
+            tqdm.write("DB error: " + str(e))
 
 def insert_domains(program_name, subdomain):
     with sqlite_lock:
@@ -101,7 +101,7 @@ def unzip_files(file_path, save_dir):
             zf.extractall(save_dir)
         os.remove(file_path)
     except Exception as e:
-        print(f"Error unzipping {file_path}: {e}")
+        tqdm.write(f"Error unzipping {file_path}: {e}")
 
 def download(download_link, save_dir, file_name, program_name, platform, offer_bounty):
     # Ensure the program folder exists
@@ -120,9 +120,9 @@ def download(download_link, save_dir, file_name, program_name, platform, offer_b
     try:
         opener.retrieve(download_link, str(file_path))
         unzip_files(str(file_path), str(program_dir))
-        print(f"{Red}[+]{White} {file_name} Done {Green}[\u2713]{White}")
+        tqdm.write(f"{Red}[+]{White} {file_name} Done {Green}[\u2713]{White}")
     except Exception as e:
-        print(f"Error downloading {file_name}: {e}")
+        tqdm.write(f"Error downloading {file_name}: {e}")
 
 def merge_sub_files_and_insert(save_dir, program_name):
     program_dir = Path(save_dir) / program_name
@@ -170,16 +170,24 @@ def process_program(program, save_dir):
 ##########################################
 def download_filtered_programs(filter_func, save_dir):
     programs = [p for p in data_json if filter_func(p)]
-    print(f"Starting download of {len(programs)} programs...")
+    tqdm.write(f"Starting download of {len(programs)} programs...")
+    # Get terminal height so the progress bar appears on the last line
+    terminal_height = os.get_terminal_size().lines
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(process_program, prog, save_dir): prog for prog in programs}
-        # Wrap the as_completed iterator with tqdm for a progress bar.
-        for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc="Processing programs"):
+        # Set the progress bar's position to the bottom (terminal height minus one)
+        for future in tqdm(
+            concurrent.futures.as_completed(futures), 
+            total=len(futures), 
+            desc="Processing programs",
+            position=terminal_height - 1,
+            leave=True
+        ):
             prog = futures[future]
             try:
                 future.result()
             except Exception as exc:
-                print(f"{prog['name']} generated an exception: {exc}")
+                tqdm.write(f"{prog['name']} generated an exception: {exc}")
     ask(save_dir)
 
 ##########################################
@@ -287,7 +295,7 @@ def httprobe_command(file_name):
         pass  # Truncate file first
     p1 = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, bufsize=1)
     for line in p1.stdout:
-        print(line, end='')
+        tqdm.write(line.rstrip())
 
 def httpx_command(file_name):
     cmd = f'cat "new_{file_name}.txt" | httpx -t 200 -silent -nc -rl 600 | tee -a "live_domains_{file_name}_httpx.txt"'
@@ -295,7 +303,7 @@ def httpx_command(file_name):
         pass
     p1 = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, bufsize=1)
     for line in p1.stdout:
-        print(line, end='')
+        tqdm.write(line.rstrip())
 
 def ask(first_dir):
     print("\n")
@@ -343,7 +351,7 @@ def export_programme():
                 for sd in subdomains:
                     file.write(sd + "\n")
     except Exception as e:
-        print(e)
+        tqdm.write(str(e))
 
 ##########################################
 # Main menu definitions and loop
@@ -567,7 +575,7 @@ def main():
         elif choice == 14:
             export_programme()
         elif choice == 15:
-            print("Quit Selected")
+            tqdm.write("Quit Selected")
             break
 
 if __name__ == "__main__":
