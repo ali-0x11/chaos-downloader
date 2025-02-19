@@ -1,3 +1,4 @@
 simple-term-menu
 tabulate
 progress
+colorlog
