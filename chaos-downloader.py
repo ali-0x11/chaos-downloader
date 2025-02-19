@@ -9,10 +9,17 @@ import subprocess
 import sqlite3
 import threading
 import concurrent.futures
+import logging
 from pathlib import Path
 from simple_term_menu import TerminalMenu
 from tabulate import tabulate
-from tqdm import tqdm  # Added progress bar support
+
+# Configure logging for professional output
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 # Clear screen
 os.system("clear")
@@ -35,15 +42,6 @@ def setup_database():
         sqliteConnection.commit()
 
 setup_database()
-
-##########################################
-# Colors for terminal output
-##########################################
-Red     = "\033[31m"
-Green   = "\033[32m"
-White   = "\033[97m"
-Yellow  = "\033[33m"
-Default = "\033[0m"
 
 ##########################################
 # Load JSON data from chaos API
@@ -72,7 +70,7 @@ def insert_table_name(program_name, platform, offer_bounty):
             )
             sqliteConnection.commit()
         except Exception as e:
-            tqdm.write("DB error: " + str(e))
+            logging.error("DB error: %s", e)
 
 def insert_domains(program_name, subdomain):
     with sqlite_lock:
@@ -101,7 +99,7 @@ def unzip_files(file_path, save_dir):
             zf.extractall(save_dir)
         os.remove(file_path)
     except Exception as e:
-        tqdm.write(f"Error unzipping {file_path}: {e}")
+        logging.error("Error unzipping %s: %s", file_path, e)
 
 def download(download_link, save_dir, file_name, program_name, platform, offer_bounty):
     # Ensure the program folder exists
@@ -120,9 +118,9 @@ def download(download_link, save_dir, file_name, program_name, platform, offer_b
     try:
         opener.retrieve(download_link, str(file_path))
         unzip_files(str(file_path), str(program_dir))
-        tqdm.write(f"{Red}[+]{White} {file_name} Done {Green}[\u2713]{White}")
+        logging.info("[+] %s downloaded successfully.", file_name)
     except Exception as e:
-        tqdm.write(f"Error downloading {file_name}: {e}")
+        logging.error("Error downloading %s: %s", file_name, e)
 
 def merge_sub_files_and_insert(save_dir, program_name):
     program_dir = Path(save_dir) / program_name
@@ -170,24 +168,15 @@ def process_program(program, save_dir):
 ##########################################
 def download_filtered_programs(filter_func, save_dir):
     programs = [p for p in data_json if filter_func(p)]
-    tqdm.write(f"Starting download of {len(programs)} programs...")
-    # Get terminal height so the progress bar appears on the last line
-    terminal_height = os.get_terminal_size().lines
+    logging.info("Starting download of %d programs...", len(programs))
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(process_program, prog, save_dir): prog for prog in programs}
-        # Set the progress bar's position to the bottom (terminal height minus one)
-        for future in tqdm(
-            concurrent.futures.as_completed(futures), 
-            total=len(futures), 
-            desc="Processing programs",
-            position=terminal_height - 1,
-            leave=True
-        ):
+        for future in concurrent.futures.as_completed(futures):
             prog = futures[future]
             try:
                 future.result()
             except Exception as exc:
-                tqdm.write(f"{prog['name']} generated an exception: {exc}")
+                logging.error("%s generated an exception: %s", prog['name'], exc)
     ask(save_dir)
 
 ##########################################
@@ -203,7 +192,7 @@ def filter_not_offer_bounty(p):
     return p["bounty"] == False
 
 def filter_by_platform(p, platform): 
-    # For "self hosted", platform is empty string
+    # For "self hosted", platform is an empty string
     return p["platform"].lower() == platform.lower() if platform else p["platform"] == ""
 
 def filter_new_subdomain(p): 
@@ -284,7 +273,7 @@ def download_specific_program(program_name):
         print(tabulate(info_table, headers=["Info", program_name], tablefmt="double_grid"))
         download_filtered_programs(lambda p: p["name"] == program_name, base_dir)
     else:
-        print("Program not found.")
+        logging.warning("Program '%s' not found.", program_name)
 
 ##########################################
 # Functions for external commands & export
@@ -295,7 +284,7 @@ def httprobe_command(file_name):
         pass  # Truncate file first
     p1 = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, bufsize=1)
     for line in p1.stdout:
-        tqdm.write(line.rstrip())
+        logging.info(line.strip())
 
 def httpx_command(file_name):
     cmd = f'cat "new_{file_name}.txt" | httpx -t 200 -silent -nc -rl 600 | tee -a "live_domains_{file_name}_httpx.txt"'
@@ -303,17 +292,16 @@ def httpx_command(file_name):
         pass
     p1 = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, bufsize=1)
     for line in p1.stdout:
-        tqdm.write(line.rstrip())
+        logging.info(line.strip())
 
 def ask(first_dir):
-    print("\n")
     options = ["httprobe", "httpx", "Back to Main Menu", "Exit"]
     menu = TerminalMenu(
         options,
         title="Do you want to use httprobe or httpx?",
-        menu_cursor=main_menu_cursor,
-        menu_cursor_style=main_menu_cursor_style,
-        menu_highlight_style=main_menu_style
+        menu_cursor="> ",
+        menu_cursor_style=("fg_red", "bold"),
+        menu_highlight_style=("bg_red", "fg_yellow")
     )
     choice = menu.show()
     if choice == 0:
@@ -332,9 +320,9 @@ def export_programme():
             programme_names,
             title=main_menu_title + "  Export Menu.\n  Press Q or Esc to back to main menu. \n",
             show_search_hint=True,
-            menu_cursor=main_menu_cursor,
-            menu_cursor_style=main_menu_cursor_style,
-            menu_highlight_style=main_menu_style,
+            menu_cursor="> ",
+            menu_cursor_style=("fg_red", "bold"),
+            menu_highlight_style=("bg_red", "fg_yellow"),
             multi_select=True,
             show_multi_select_hint=True
         )
@@ -351,7 +339,7 @@ def export_programme():
                 for sd in subdomains:
                     file.write(sd + "\n")
     except Exception as e:
-        tqdm.write(str(e))
+        logging.error("Error exporting programme: %s", e)
 
 ##########################################
 # Main menu definitions and loop
@@ -387,17 +375,13 @@ main_menu_items = [
     "Quit"
 ]
 
-main_menu_cursor = "> "
-main_menu_cursor_style = ("fg_red", "bold")
-main_menu_style = ("bg_red", "fg_yellow")
-
 def main():
     main_menu = TerminalMenu(
         menu_entries=main_menu_items,
         title=main_menu_title + "  Main Menu.\n  Press Q or Esc to back to main menu. \n",
-        menu_cursor=main_menu_cursor,
-        menu_cursor_style=main_menu_cursor_style,
-        menu_highlight_style=main_menu_style,
+        menu_cursor="> ",
+        menu_cursor_style=("fg_red", "bold"),
+        menu_highlight_style=("bg_red", "fg_yellow"),
         cycle_cursor=True,
         clear_screen=False,
     )
@@ -414,9 +398,9 @@ def main():
             plat_menu = TerminalMenu(
                 platform_options,
                 title=main_menu_title + "  Platform Menu.\n  Press Q or Esc to back to main menu. \n",
-                menu_cursor=main_menu_cursor,
-                menu_cursor_style=main_menu_cursor_style,
-                menu_highlight_style=main_menu_style,
+                menu_cursor="> ",
+                menu_cursor_style=("fg_red", "bold"),
+                menu_highlight_style=("bg_red", "fg_yellow"),
                 cycle_cursor=True,
                 clear_screen=True,
             )
@@ -435,9 +419,9 @@ def main():
             plat_menu = TerminalMenu(
                 platform_options,
                 title=main_menu_title + "  Platform Menu.\n  Press Q or Esc to back to main menu. \n",
-                menu_cursor=main_menu_cursor,
-                menu_cursor_style=main_menu_cursor_style,
-                menu_highlight_style=main_menu_style,
+                menu_cursor="> ",
+                menu_cursor_style=("fg_red", "bold"),
+                menu_highlight_style=("bg_red", "fg_yellow"),
                 cycle_cursor=True,
                 clear_screen=True,
             )
@@ -452,9 +436,9 @@ def main():
             plat_menu = TerminalMenu(
                 platform_options,
                 title=main_menu_title + "  Platform Menu.\n  Press Q or Esc to back to main menu. \n",
-                menu_cursor=main_menu_cursor,
-                menu_cursor_style=main_menu_cursor_style,
-                menu_highlight_style=main_menu_style,
+                menu_cursor="> ",
+                menu_cursor_style=("fg_red", "bold"),
+                menu_highlight_style=("bg_red", "fg_yellow"),
                 cycle_cursor=True,
                 clear_screen=True,
             )
@@ -471,9 +455,9 @@ def main():
             plat_menu = TerminalMenu(
                 platform_options,
                 title=main_menu_title + "  Platform Menu.\n  Press Q or Esc to back to main menu. \n",
-                menu_cursor=main_menu_cursor,
-                menu_cursor_style=main_menu_cursor_style,
-                menu_highlight_style=main_menu_style,
+                menu_cursor="> ",
+                menu_cursor_style=("fg_red", "bold"),
+                menu_highlight_style=("bg_red", "fg_yellow"),
                 cycle_cursor=True,
                 clear_screen=True,
             )
@@ -488,9 +472,9 @@ def main():
             plat_menu = TerminalMenu(
                 platform_options,
                 title=main_menu_title + "  Platform Menu.\n  Press Q or Esc to back to main menu. \n",
-                menu_cursor=main_menu_cursor,
-                menu_cursor_style=main_menu_cursor_style,
-                menu_highlight_style=main_menu_style,
+                menu_cursor="> ",
+                menu_cursor_style=("fg_red", "bold"),
+                menu_highlight_style=("bg_red", "fg_yellow"),
                 cycle_cursor=True,
                 clear_screen=True,
             )
@@ -505,9 +489,9 @@ def main():
             plat_menu = TerminalMenu(
                 platform_options,
                 title=main_menu_title + "  Platform Menu.\n  Press Q or Esc to back to main menu. \n",
-                menu_cursor=main_menu_cursor,
-                menu_cursor_style=main_menu_cursor_style,
-                menu_highlight_style=main_menu_style,
+                menu_cursor="> ",
+                menu_cursor_style=("fg_red", "bold"),
+                menu_highlight_style=("bg_red", "fg_yellow"),
                 cycle_cursor=True,
                 clear_screen=True,
             )
@@ -523,9 +507,9 @@ def main():
                 prog_options,
                 title=main_menu_title + "  Programs Menu.\n  Press Q or Esc to back to main menu. \n",
                 show_search_hint=True,
-                menu_cursor=main_menu_cursor,
-                menu_cursor_style=main_menu_cursor_style,
-                menu_highlight_style=main_menu_style,
+                menu_cursor="> ",
+                menu_cursor_style=("fg_red", "bold"),
+                menu_highlight_style=("bg_red", "fg_yellow"),
                 multi_select=True,
                 show_multi_select_hint=True
             )
@@ -565,9 +549,9 @@ def main():
             info_menu = TerminalMenu(
                 info_options,
                 title=main_menu_title + "  Info Menu.\n  Press Q or Esc to back to main menu. \n",
-                menu_cursor=main_menu_cursor,
-                menu_cursor_style=main_menu_cursor_style,
-                menu_highlight_style=main_menu_style
+                menu_cursor="> ",
+                menu_cursor_style=("fg_red", "bold"),
+                menu_highlight_style=("bg_red", "fg_yellow")
             )
             i_choice = info_menu.show()
             if i_choice == len(info_options) - 1:
@@ -575,7 +559,7 @@ def main():
         elif choice == 14:
             export_programme()
         elif choice == 15:
-            tqdm.write("Quit Selected")
+            logging.info("Quit Selected. Exiting...")
             break
 
 if __name__ == "__main__":
