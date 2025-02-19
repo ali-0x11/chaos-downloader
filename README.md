@@ -1,4 +1,3 @@
-```markdown
 # Chaos Downloader
 
 Chaos Downloader is a command-line tool designed to interface with the [Chaos API](https://projectdiscovery.io) provided by ProjectDiscovery. It streamlines subdomain extraction, filtering, and post-processing, making it an effective asset for your domain enumeration workflow.
@@ -37,6 +36,3 @@ chmod +x ./chaos-downloader.py
 - **Linux Only:** This tool is designed to operate on Linux systems.
 - **Initial Run Behavior:** The tool may not display new subdomains on the first run due to its dependency on an existing database for comparisons.
 - **Automated Post-Processing:** On detecting new subdomains, the tool will automatically execute httprobe or httpx for further verification.
-
-Feel free to contribute or raise issues on the [GitHub repository](https://github.com/ali-0x11/chaos-downloader/).
-```
