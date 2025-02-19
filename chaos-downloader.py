@@ -10,16 +10,27 @@ import sqlite3
 import threading
 import concurrent.futures
 import logging
+import colorlog  # pip install colorlog
 from pathlib import Path
 from simple_term_menu import TerminalMenu
 from tabulate import tabulate
 
-# Configure logging for professional output
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+# Configure colored logging
+handler = colorlog.StreamHandler()
+handler.setFormatter(colorlog.ColoredFormatter(
+    "%(log_color)s%(asctime)s - %(levelname)s - %(message)s",
+    datefmt='%Y-%m-%d %H:%M:%S',
+    log_colors={
+        'DEBUG':    'cyan',
+        'INFO':     'green',
+        'WARNING':  'yellow',
+        'ERROR':    'red',
+        'CRITICAL': 'red,bg_white',
+    }
+))
+logger = colorlog.getLogger()
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 # Clear screen
 os.system("clear")
@@ -70,7 +81,7 @@ def insert_table_name(program_name, platform, offer_bounty):
             )
             sqliteConnection.commit()
         except Exception as e:
-            logging.error("DB error: %s", e)
+            logger.error("DB error: %s", e)
 
 def insert_domains(program_name, subdomain):
     with sqlite_lock:
@@ -99,7 +110,7 @@ def unzip_files(file_path, save_dir):
             zf.extractall(save_dir)
         os.remove(file_path)
     except Exception as e:
-        logging.error("Error unzipping %s: %s", file_path, e)
+        logger.error("Error unzipping %s: %s", file_path, e)
 
 def download(download_link, save_dir, file_name, program_name, platform, offer_bounty):
     # Ensure the program folder exists
@@ -118,9 +129,9 @@ def download(download_link, save_dir, file_name, program_name, platform, offer_b
     try:
         opener.retrieve(download_link, str(file_path))
         unzip_files(str(file_path), str(program_dir))
-        logging.info("[+] %s downloaded successfully.", file_name)
+        logger.info("[+] %s downloaded successfully.", file_name)
     except Exception as e:
-        logging.error("Error downloading %s: %s", file_name, e)
+        logger.error("Error downloading %s: %s", file_name, e)
 
 def merge_sub_files_and_insert(save_dir, program_name):
     program_dir = Path(save_dir) / program_name
@@ -168,7 +179,7 @@ def process_program(program, save_dir):
 ##########################################
 def download_filtered_programs(filter_func, save_dir):
     programs = [p for p in data_json if filter_func(p)]
-    logging.info("Starting download of %d programs...", len(programs))
+    logger.info("Starting download of %d programs...", len(programs))
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(process_program, prog, save_dir): prog for prog in programs}
         for future in concurrent.futures.as_completed(futures):
@@ -176,7 +187,7 @@ def download_filtered_programs(filter_func, save_dir):
             try:
                 future.result()
             except Exception as exc:
-                logging.error("%s generated an exception: %s", prog['name'], exc)
+                logger.error("%s generated an exception: %s", prog['name'], exc)
     ask(save_dir)
 
 ##########################################
@@ -273,7 +284,7 @@ def download_specific_program(program_name):
         print(tabulate(info_table, headers=["Info", program_name], tablefmt="double_grid"))
         download_filtered_programs(lambda p: p["name"] == program_name, base_dir)
     else:
-        logging.warning("Program '%s' not found.", program_name)
+        logger.warning("Program '%s' not found.", program_name)
 
 ##########################################
 # Functions for external commands & export
@@ -284,7 +295,7 @@ def httprobe_command(file_name):
         pass  # Truncate file first
     p1 = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, bufsize=1)
     for line in p1.stdout:
-        logging.info(line.strip())
+        logger.info(line.strip())
 
 def httpx_command(file_name):
     cmd = f'cat "new_{file_name}.txt" | httpx -t 200 -silent -nc -rl 600 | tee -a "live_domains_{file_name}_httpx.txt"'
@@ -292,7 +303,7 @@ def httpx_command(file_name):
         pass
     p1 = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, bufsize=1)
     for line in p1.stdout:
-        logging.info(line.strip())
+        logger.info(line.strip())
 
 def ask(first_dir):
     options = ["httprobe", "httpx", "Back to Main Menu", "Exit"]
@@ -339,7 +350,7 @@ def export_programme():
                 for sd in subdomains:
                     file.write(sd + "\n")
     except Exception as e:
-        logging.error("Error exporting programme: %s", e)
+        logger.error("Error exporting programme: %s", e)
 
 ##########################################
 # Main menu definitions and loop
@@ -559,7 +570,7 @@ def main():
         elif choice == 14:
             export_programme()
         elif choice == 15:
-            logging.info("Quit Selected. Exiting...")
+            logger.info("Quit Selected. Exiting...")
             break
 
 if __name__ == "__main__":
